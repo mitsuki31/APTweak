@@ -1,0 +1,227 @@
+#!/bin/sh
+
+# APTweak - Aim for Performance Tweak Module
+# Version 0.1.0 Stable
+#
+# This module are developed aiming to increase and boost
+# your device performance by tweaking system properties and
+# settings using ADB Shell.
+#
+# >>>>>>>>>>>>>>>>>>>>>>>> [ WARNING ] <<<<<<<<<<<<<<<<<<<<<<<<
+#
+# PLEASE USE THIS AT YOUR OWN RISK!
+# After executing this script, your device battery may drain
+# more quick than usual. NOT RECOMMENDED to use this tweak for
+# daily use.
+#
+# >>>>>>>>>>>>>>>>>>>>>>>> [ ------- ] <<<<<<<<<<<<<<<<<<<<<<<<
+#
+# Developed by Ryuu Mitsuki (@mitsuki31)
+# GitHub: <https://github.com/mitsuki31>
+#
+# Copyright (c) 2024 Ryuu Mitsuki. All rights reserved.
+
+function __info__() { printf "[INFO] $@\n" ; }
+
+function print_sysinfo() {
+    printf "\n||| ====== [ SYSTEM INFORMATION ] ====== |||\n"
+    sleep 0.5
+    printf "  [-] Device Model      :  %s\n" \
+        "$(getprop ro.product.model)"
+    sleep 0.5
+    printf "  [-] Build Fingerprint :  %s\n" \
+        "$(getprop ro.product.build.fingerprint || 'Unknown')"
+    sleep 0.5
+    printf "  [-] Software Version  :  %s\n" \
+        "$(getprop ro.build.software.version)"
+    sleep 0.5
+    printf "  [-] Android Version   :  %s\n" \
+        "$(getprop ro.build.version.release)"
+    sleep 0.5
+    printf "  [-] Kernel Version    :  %s\n" \
+        "$(uname -r)"
+    sleep 0.5
+    printf "  [-] Device Rooted     :  "
+    [ "$(getprop persist.sys.is_root)" == '1' ] \
+        && echo 'true' || echo 'false'
+    sleep 0.45
+    printf '\n'
+}
+
+function install() {
+    __info__ "Setting up smooth graphic renderer ..." && sleep 1
+    # Set the renderer to 'skiagl' for better and smooth performance
+    setprop   debug.hwui.renderer                       skiagl
+    setprop   debug.renderengine.backend                skiaglthreaded
+    # Improve GPU efficiency but increase VRAM consumption
+    setprop   renderthread.skia.reduceopstasksplitting  true
+
+    __info__ "Setting up anti-aliasing ..." && sleep 1
+    # Anti-aliasing settings
+    setprop   debug.egl.hw                        true
+    setprop   debug.egl.force_msaa                true
+    setprop   debug.egl.swapinterval              1
+
+    __info__ "Setting up V-Sync rendering ..." && sleep 1
+    # V-Sync settings
+    # V-Sync is recommended to prevent screen tearing and stuttering
+    setprop   debug.cpurend.vsync                 true
+
+    __info__ "Tuning up CPU performance ..." && sleep 2
+    # * This line is a non-existent property within Android code.
+    # * You can see the proof at this link:
+    # *     https://cs.android.com/search?q=debug.performance.tuning
+    # setprop   debug.performance.tuning            1
+
+    # FPS divisor to lower the FPS
+    # Set to 1 to use full FPS, and 2 for half the full FPS.
+    setprop   debug.hwui.fps_divisor              1
+    setprop   debug.hwui.use_hint_manager         true
+    setprop   debug.hwui.skip_empty_damage        true
+    setprop   debug.hwui.use_partial_updates      true
+    setprop   debug.hwui.filter_test_overhead     true
+    # Use H/W composition
+    setprop   debug.sf.hw                         true
+    setprop   debug.sf.disable_backpressure       true
+    setprop   debug.sf.latch_unsignaled           1
+    setprop   debug.sf.enable_hwc_vds             true
+
+    __info__ "Configuring GPU rendering ..." && sleep 1
+    # GPU rendering settings
+    setprop   debug.composition.type              gpu
+    # Force enable the GPU vsync
+    setprop   debug.hwc.force_gpu_vsync           true
+    # Force all 2D graphics rendering to be done by GPU itself
+    setprop   debug.hwui.force_gpu_for_2d         true
+    setprop   debug.gralloc.gfx_ubwc_disable      false
+    # Enable UBWC for framebuffer
+    setprop   debug.gralloc.enable_fb_ubwc        true
+
+    __info__ "Configuring FPS offset limit ..." && sleep 1
+    setprop   debug.sf.early_phase_offset_ns                500000
+    setprop   debug.sf.early_app_phase_offset_ns            500000
+    setprop   debug.sf.early_gl_phase_offset_ns             3000000
+    setprop   debug.sf.early_gl_app_phase_offset_ns         15000000
+    setprop   debug.sf.high_fps_early_phase_offset_ns       6100000
+    setprop   debug.sf.high_fps_late_sf_phase_offset_ns     8000000
+    setprop   debug.sf.high_fps_early_gl_phase_offset_ns    9000000
+    setprop   debug.sf.high_fps_late_app_phase_offset_ns    1000000
+    setprop   debug.sf.high_fps_late_sf_phase_offset_ns     8000000
+    setprop   debug.sf.high_fps_early_gl_phase_offset_ns    9000000
+    setprop   debug.sf.phase_offset_threshold_for_next_vsync_ns     6100000
+    setprop   debug.sf.early.app.duration                   20000000
+    setprop   debug.sf.early.sf.duration                    27600000
+    setprop   debug.sf.earlyGl.app.duration                 20000000
+    setprop   debug.sf.earlyGl.sf.duration                  27600000
+    setprop   debug.sf.hwc.min.duration                     23000000
+    setprop   debug.sf.late.app.duration                    20000000
+    setprop   debug.sf.late.sf.duration                     27600000
+    # Set minimum refresh rate
+    setprop   debug.refresh_rate.min_fps                    60
+
+    # Refresh rate settings
+    settings  delete  system  thermal_limit_refresh_rate
+    settings  put     system  peak_refresh_rate             120
+    settings  put     system  min_refresh_rate              60
+    settings  put     system  user_refresh_rate             120
+
+    __info__ "Enabling advanced performance tweaks ..." && sleep 1
+    settings  put     system  performance_mode_enable               true
+    settings  put     system  rakuten_denwa                         false
+    settings  put     global  cached_apps_freezer                   true
+    settings  put     global  adaptive_battery_management_enabled   false
+    settings  put     global  sem_enhanced_cpu_responsiveness       true
+    # These lines might increase heat and battery drain
+    settings  put     global  restricted_device_performance         0,0
+    settings  put     global  enhanced_processing                   2
+    settings  put     secure  refresh_rate_mode                     2
+
+    cmd       thermalservice  override-status                       0
+    cmd       power           set-fixed-performance-mode-enabled    true
+
+    dumpsys   deviceidle      force-idle
+
+    printf '\n'
+    __info__ "Terminating all background processes ..." && sleep 0.5
+    am kill-all
+
+    printf '\n'
+    __info__ "All completed\n"
+    __info__ "Do not reboot your device!\n"
+}
+
+function uninstall() {
+    __info__ "Uninstalling existing configuration ..." && sleep 2
+    settings  delete  system  peak_refresh_rate
+    settings  delete  system  min_refresh_rate
+    settings  delete  system  user_refresh_rate
+
+    settings  put     system  rakuten_denwa                         true
+    settings  put     global  cached_apps_freezer                   false
+    settings  put     global  adaptive_battery_management_enabled   true
+    settings  put     global  sem_enhanced_cpu_responsiveness       false
+    settings  put     global  restricted_device_performance         1,1
+    settings  put     system  performance_mode_enable               false
+    settings  put     global  enhanced_processing                   1
+    settings  put     secure  refresh_rate_mode                     1
+
+    cmd       thermalservice  override-status                       1
+    cmd       power           set-fixed-performance-mode-enabled    false
+
+    printf '\n'
+    __info__ "All completed\n"
+    __info__ "Some settings needs your device to be rebooted"
+    __info__ "Please reboot your device manually!\n"
+}
+
+function fix() {
+    __info__ "Fixing several configurations ..." && sleep 2
+    setprop   debug.sf.hw                           false
+    setprop   debug.egl.hw                          false
+    setprop   debug.egl.force_msaa                  false
+    setprop   debug.composition.type                dyn  # Dynamic
+    setprop   debug.hwui.force_gpu_for_2d           false
+    setprop   debug.sf.enable_hwc_vds               false
+    setprop   debug.gralloc.enable_fb_ubwc          false
+
+    settings  put     secure  refresh_rate_mode                     1
+    settings  put     global  sem_enhanced_cpu_responsiveness       false
+
+    printf '\n'
+    __info__ "All completed\n"
+    __info__ "If the issues still persist, uninstall is the best way\n"
+}
+
+function main() {
+    printf '\n'
+    echo   "  >_ APTweak Module v0.1.0"
+    echo   " -------------------------------------"
+    echo   "  [Version] : 0.1.0 Stable"
+    echo   "  [Author]  : Ryuu Mitsuki (@mitsuki31)"
+    echo   "  [GitHub]  : github.com/mitsuki31"
+    echo   " -------------------------------------"
+
+    local func=':'  # Default to `:` (i.e., does nothing)
+    case "$1" in
+        -i|install|--install)     func='install'        ;;
+        -u|uninstall|--uninstall) func='uninstall'      ;;
+        -f|fix|--fix)             func='fix'            ;;
+        # Exit the program if the given argument is empty or unknown
+        *)
+            printf "\n[ERROR] Unknown argument: '$1'\n"
+            echo   " Expected arguments:"
+            echo   "         [-i|-u|-f]"
+            echo   "         [--install|--uninstall|--fix]"
+            echo   "         [install|uninstall|fix]"
+            printf '\n' && exit 1
+        ;;
+    esac
+
+    # Print the system information of current device
+    print_sysinfo
+    $func
+    unset func
+}
+
+main "$@"
+unset __info__ print_sysinfo install uninstall main fix
